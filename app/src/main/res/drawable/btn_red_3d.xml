@@ -1,0 +1,27 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 버튼 눌림 상태 -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#D32F2F"
+                android:endColor="#B71C1C"
+                android:angle="90"/>
+            <corners android:radius="12dp"/>
+            <padding android:left="2dp" android:top="2dp" android:right="2dp" android:bottom="2dp"/>
+        </shape>
+    </item>
+
+    <!-- 기본 상태 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FF5252"
+                android:endColor="#E53935"
+                android:angle="90"/>
+            <corners android:radius="12dp"/>
+            <padding android:left="2dp" android:top="2dp" android:right="2dp" android:bottom="2dp"/>
+        </shape>
+    </item>
+
+</selector>

@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "771540615595",
+    "project_id": "gudasi-1d20c",
+    "storage_bucket": "gudasi-1d20c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:771540615595:android:319ab5e9a85363bb9892ee",
+        "android_client_info": {
+          "package_name": "com.project.gudasi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "771540615595-arje6ga3nfer1mfh07h5j114immp4q4o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.project.gudasi",
+            "certificate_hash": "0ce59db21948fd257f6714779c670345781a5448"
+          }
+        },
+        {
+          "client_id": "771540615595-bfml3376nh9kv3cakvsm5k00okf4a8dk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.project.gudasi",
+            "certificate_hash": "174f65d8ca9c4b312922c8e41c56e0cbd7381631"
+          }
+        },
+        {
+          "client_id": "771540615595-v7d471kvt26pl1oppojrkvgrr7onge7q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJx5bWndadGzZkhPFwu9xdbwgmVpAsvdY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "771540615595-bvrj2djmkvgpenbgia3ocrjtcn0c7ig0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
