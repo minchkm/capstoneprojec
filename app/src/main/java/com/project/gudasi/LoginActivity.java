@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -59,19 +60,19 @@ public class LoginActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.appCarouselRecyclerView);
 
         // spanCount는 각 줄 아이템 수 합: 4 + 6 + 5 = 15
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 15, GridLayoutManager.HORIZONTAL, false);
+        GridLayoutManager layoutManager = new GridLayoutManager(this, 3, GridLayoutManager.HORIZONTAL, false);
 
         // SpanSizeLookup 이용해 줄별 배치 아이템 개수에 맞게 spanSize 설정 가능 (필요시 추가)
 
         recyclerView.setLayoutManager(layoutManager);
 
         List<AppItem> appList = Arrays.asList(
-                new AppItem(android.R.drawable.ic_dialog_email, "이메일"),
-                new AppItem(android.R.drawable.ic_dialog_map, "지도"),
-                new AppItem(android.R.drawable.ic_dialog_info, "정보"),
-                new AppItem(android.R.drawable.ic_input_add, "추가"),
-                new AppItem(android.R.drawable.ic_menu_camera, "카메라"),
-                new AppItem(android.R.drawable.ic_menu_call, "전화")
+                new AppItem(R.drawable.ic_netflix, "넷플릭스"),
+                new AppItem(R.drawable.ic_spotify, "스포티파이"),
+                new AppItem(R.drawable.ic_youtube_music, "유튜브"),
+                new AppItem(R.drawable.ic_melon, "멜론"),
+                new AppItem(R.drawable.ic_coupang, "쿠팡"),
+                new AppItem(R.drawable.ic_watcha, "왓챠")
         );
 
        /* List<AppItem> appList = Arrays.asList(

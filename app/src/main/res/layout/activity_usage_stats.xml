@@ -22,6 +22,7 @@
             android:textSize="16sp"/>
 
         <TextView
+            android:id="@+id/monthlyUsage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="₩ 45,000"
@@ -113,6 +114,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/youtube_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="사용시간: 1시간 30분"
@@ -133,6 +135,7 @@
                             android:layout_marginBottom="6dp"/>
 
                         <TextView
+                            android:id="@+id/youtube_note"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="📌 사용량 적정"
@@ -212,6 +215,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/widget_time"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="사용시간: 50분"
@@ -232,6 +236,7 @@
                             android:layout_marginBottom="6dp"/>
 
                         <TextView
+                            android:id="@+id/widget_note"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="📌 사용량 적음"

@@ -1,6 +1,7 @@
 package com.project.gudasi; // ← 앱 패키지에 맞게 수정
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -20,6 +21,13 @@ public class RankingActivity extends AppCompatActivity {
         ImageView btnRanking = bottomBar.findViewById(R.id.btnRanking);  // 수정: 래퍼 LinearLayout에도 ID 추가
         ImageView btnAppUsage = bottomBar.findViewById(R.id.btnAppUsage);
         // ImageView btnMyPage = findViewById(R.id.btnMyPage);
+
+        int defaultColor = Color.parseColor("#666666");
+        int selectedColor = Color.parseColor("#FFFFFF");
+
+        btnHome.setColorFilter(defaultColor);
+        btnRanking.setColorFilter(selectedColor);
+        btnAppUsage.setColorFilter(defaultColor);
 
         btnHome.setOnClickListener(new View.OnClickListener() {
             @Override

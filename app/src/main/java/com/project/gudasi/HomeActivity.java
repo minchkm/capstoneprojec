@@ -3,6 +3,7 @@ package com.project.gudasi; // ← 앱 패키지에 맞게 수정
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -39,6 +40,8 @@ public class HomeActivity extends AppCompatActivity {
     private TextView nextPaymentPrice;
     private TextView paymentComplete;
     private TextView mainTitle;
+
+    public int totalCurrentMonth = 0; // 이번 달 결제액
 
 
     @Override
@@ -82,18 +85,26 @@ public class HomeActivity extends AppCompatActivity {
 
         if (cursor != null && cursor.moveToFirst()) {
             int nameIndex = cursor.getColumnIndex("name");
+            int emailIndex = cursor.getColumnIndex("email");
 
             if (nameIndex != -1) {
                 String name = cursor.getString(nameIndex); // DB에서 직접 가져오기
-
                 TextView userName = findViewById(R.id.userName);
                 userName.setText(name + "님");
+            }
+
+            if (emailIndex != -1) {
+                String email = cursor.getString(emailIndex); // 이메일
+                Log.d("DB_DEBUG", "로그인한 이메일: " + email);
+
+                loadSubscriptions(email);
             } else {
                 Log.e("DB_ERROR", "컬럼 인덱스를 찾을 수 없습니다.");
             }
         } else {
             Toast.makeText(this, "사용자 정보가 없습니다.", Toast.LENGTH_SHORT).show();
         }
+
 
         if (cursor != null) cursor.close();
         db.close();
@@ -110,8 +121,6 @@ public class HomeActivity extends AppCompatActivity {
         adapter = new SubscriptionAdapter(subscriptionList);
         recyclerView.setAdapter(adapter);
 
-        // 구독 데이터 Firestore에서 로드
-        loadSubscriptions();
 
         // 하단 메뉴 버튼 처리
         setupBottomNavigation();
@@ -166,14 +175,16 @@ public class HomeActivity extends AppCompatActivity {
         return nextPayment;
     }
 
-    private void loadSubscriptions() {
+    private void loadSubscriptions(String email) {
         firedb.collection("subscriptions")
+                .document(email)
+                .collection("items")
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         subscriptionList.clear();
 
-                        int totalCurrentMonth = 0; // 이번 달 결제액
+
                         int totalOverall = 0;      // 총 지출총액
 
                         Calendar now = Calendar.getInstance();
@@ -300,6 +311,13 @@ public class HomeActivity extends AppCompatActivity {
         ImageView btnAppUsage = bottomBar.findViewById(R.id.btnAppUsage);
         // ImageView btnMyPage = findViewById(R.id.btnMyPage);
 
+        int defaultColor = Color.parseColor("#666666");
+        int selectedColor = Color.parseColor("#FFFFFF");
+
+        btnHome.setColorFilter(selectedColor);
+        btnRanking.setColorFilter(defaultColor);
+        btnAppUsage.setColorFilter(defaultColor);
+
         btnHome.setOnClickListener(v -> {
             // 현재 페이지와 동일하므로 새로 열 필요 없음
         });
@@ -309,7 +327,9 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         btnAppUsage.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, UsageStatsActivity.class));
+            Intent intent = new Intent(HomeActivity.this, UsageStatsActivity.class);
+            intent.putExtra("totalCurrentMonth", totalCurrentMonth);
+            startActivity(intent);
         });
 
     }
