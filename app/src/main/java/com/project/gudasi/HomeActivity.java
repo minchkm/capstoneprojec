@@ -325,12 +325,12 @@ public class HomeActivity extends AppCompatActivity {
             // 현재 페이지이므로 아무것도 하지 않음
         });
 
-        btnRanking.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, RankingActivity.class));
-        });
+      btnAppUsage.setOnClickListener(v-> {
+          startActivity((new Intent(HomeActivity.this, UsageStatsActivity.class)));
+      });
 
         // 여기서 btnAppUsage의 클릭 동작을 챗봇 화면으로 변경
-        btnAppUsage.setOnClickListener(v -> {
+        btnRanking.setOnClickListener(v -> {
             startActivity(new Intent(HomeActivity.this, ChatActivity.class));
         });
     }
