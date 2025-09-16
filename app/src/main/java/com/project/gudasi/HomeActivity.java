@@ -303,34 +303,35 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
-
         View bottomBar = findViewById(R.id.bottom_bar_include);
+
         // 하단 메뉴 버튼들 참조
         ImageView btnHome = bottomBar.findViewById(R.id.btnHome);
         ImageView btnRanking = bottomBar.findViewById(R.id.btnRanking);
         ImageView btnAppUsage = bottomBar.findViewById(R.id.btnAppUsage);
-        // ImageView btnMyPage = findViewById(R.id.btnMyPage);
+
+        // 이 밖의 다른 버튼이 있다면 여기에 포함
 
         int defaultColor = Color.parseColor("#666666");
         int selectedColor = Color.parseColor("#FFFFFF");
 
+        // 기본 색상 설정 (현재 Home이 선택됨)
         btnHome.setColorFilter(selectedColor);
         btnRanking.setColorFilter(defaultColor);
         btnAppUsage.setColorFilter(defaultColor);
 
+        // 버튼 클릭 리스너 설정
         btnHome.setOnClickListener(v -> {
-            // 현재 페이지와 동일하므로 새로 열 필요 없음
+            // 현재 페이지이므로 아무것도 하지 않음
         });
 
         btnRanking.setOnClickListener(v -> {
             startActivity(new Intent(HomeActivity.this, RankingActivity.class));
         });
 
+        // 여기서 btnAppUsage의 클릭 동작을 챗봇 화면으로 변경
         btnAppUsage.setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, UsageStatsActivity.class);
-            intent.putExtra("totalCurrentMonth", totalCurrentMonth);
-            startActivity(intent);
+            startActivity(new Intent(HomeActivity.this, ChatActivity.class));
         });
-
     }
 }

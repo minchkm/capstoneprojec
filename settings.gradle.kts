@@ -16,7 +16,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://api.github.com/repos/google-ai/generativelanguage-java/packages/maven") }
+
     }
 }
 
