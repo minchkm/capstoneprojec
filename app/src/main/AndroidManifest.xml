@@ -32,6 +32,7 @@
         <activity android:name=".UsageStatsActivity" />
         <activity android:name=".ProfileActivity" />
         <activity android:name=".HomeActivity" />
+        <activity android:name=".CalendarActivity" />
 
         <activity android:name=".ChatActivity"
             android:windowSoftInputMode="adjustResize" />

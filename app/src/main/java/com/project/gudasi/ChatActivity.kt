@@ -1,9 +1,13 @@
 package com.project.gudasi
 
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -61,6 +65,10 @@ class ChatActivity : AppCompatActivity() {
                 etMessageInput.text.clear()
             }
         }
+
+
+        // 하단 메뉴 버튼 처리
+        setupBottomNavigation()
     }
 
     // 메시지를 리스트에 추가하고 화면 업데이트
@@ -83,6 +91,55 @@ class ChatActivity : AppCompatActivity() {
                 Log.e("Gemini", "API 호출 중 오류 발생: ${e.message}")
                 addMessage("오류가 발생했습니다: ${e.message}", false)
             }
+        }
+    }
+
+    private fun setupBottomNavigation() {
+        val bottomBar = findViewById<View>(R.id.bottom_bar_include)
+
+        // 하단 메뉴 버튼들 참조
+        val btnHome = bottomBar.findViewById<ImageView>(R.id.btnHome)
+        val btnRanking = bottomBar.findViewById<ImageView>(R.id.btnRanking)
+        val btnAppUsage = bottomBar.findViewById<ImageView>(R.id.btnAppUsage)
+
+        // 이 밖의 다른 버튼이 있다면 여기에 포함
+        val defaultColor = Color.parseColor("#666666")
+        val selectedColor = Color.parseColor("#FFFFFF")
+
+        // 기본 색상 설정 (현재 Home이 선택됨)
+        btnHome.setColorFilter(defaultColor)
+        btnRanking.setColorFilter(selectedColor)
+        btnAppUsage.setColorFilter(defaultColor)
+
+        // 버튼 클릭 리스너 설정
+        btnHome.setOnClickListener { v: View? -> }
+
+        btnAppUsage.setOnClickListener { v: View? ->
+            startActivity(
+                (Intent(
+                    this@ChatActivity,
+                    UsageStatsActivity::class.java
+                ))
+            )
+        }
+
+        // 여기서 btnAppUsage의 클릭 동작을 챗봇 화면으로 변경
+        btnRanking.setOnClickListener { v: View? ->
+            startActivity(
+                Intent(
+                    this@ChatActivity,
+                    ChatActivity::class.java
+                )
+            )
+        }
+
+        btnHome.setOnClickListener { v: View? ->
+            startActivity(
+                Intent(
+                    this@ChatActivity,
+                    HomeActivity::class.java
+                )
+            )
         }
     }
 }

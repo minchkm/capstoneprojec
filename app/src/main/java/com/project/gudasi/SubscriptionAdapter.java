@@ -15,6 +15,7 @@ import java.util.List;
 public class SubscriptionAdapter extends RecyclerView.Adapter<SubscriptionAdapter.SubscriptionViewHolder> {
 
     private List<Subscription> subscriptionList;
+    private Context context;
 
     public SubscriptionAdapter(List<Subscription> subscriptionList) {
         this.subscriptionList = subscriptionList;
@@ -23,6 +24,7 @@ public class SubscriptionAdapter extends RecyclerView.Adapter<SubscriptionAdapte
     @NonNull
     @Override
     public SubscriptionViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        this.context = parent.getContext();
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_subscription, parent, false);
         return new SubscriptionViewHolder(v);
@@ -51,4 +53,11 @@ public class SubscriptionAdapter extends RecyclerView.Adapter<SubscriptionAdapte
             price = itemView.findViewById(R.id.priceText);
         }
     }
+
+    public void updateData(List<Subscription> newList) {
+        this.subscriptionList.clear();
+        this.subscriptionList.addAll(newList);
+        notifyDataSetChanged();
+    }
+
 }

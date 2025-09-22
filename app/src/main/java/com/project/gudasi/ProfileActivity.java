@@ -22,6 +22,16 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
+        TextView totalSubscriptionAmount = findViewById(R.id.totalSubscriptionAmount);
+        TextView totalSubscriptionCount = findViewById(R.id.totalSubscriptionCount);
+
+        Intent intent = getIntent();
+        int totalAmount = intent.getIntExtra("totalOverallAmount", 0);
+        int totalCount = intent.getIntExtra("subscriptionCount", 0);
+
+        totalSubscriptionAmount.setText("₩ " + String.format("%,d", totalAmount));
+        totalSubscriptionCount.setText(String.format("%,d", totalCount) + "개");
+
         // --- 뒤로가기 버튼 클릭 리스너 추가 ---
         ImageView backButton = findViewById(R.id.backButton);
         if (backButton != null) {
@@ -65,8 +75,8 @@ public class ProfileActivity extends AppCompatActivity {
         LinearLayout showInfoLayout = findViewById(R.id.showInfoLayout);
         if (showInfoLayout != null) {
             showInfoLayout.setOnClickListener(v -> {
-                Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
-                startActivity(intent);
+                Intent intent2 = new Intent(ProfileActivity.this, MainActivity.class);
+                startActivity(intent2);
                 finish();
             });
         }

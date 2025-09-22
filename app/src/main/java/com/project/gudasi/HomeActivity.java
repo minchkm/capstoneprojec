@@ -19,6 +19,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class HomeActivity extends AppCompatActivity {
@@ -33,6 +35,7 @@ public class HomeActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private SubscriptionAdapter adapter;
     private List<Subscription> subscriptionList = new ArrayList<>();
+    private ArrayList<String> paymentDates = new ArrayList<>(); // 결제 날짜 리스트
     private FirebaseFirestore firedb;
     private TextView totalSubscriptionAmount;
     private TextView totalOverallAmount;
@@ -40,8 +43,10 @@ public class HomeActivity extends AppCompatActivity {
     private TextView nextPaymentPrice;
     private TextView paymentComplete;
     private TextView mainTitle;
+    private ImageView calendarButton;
 
     public int totalCurrentMonth = 0; // 이번 달 결제액
+    int totalOverall = 0;      // 총 지출총액
 
 
     @Override
@@ -65,18 +70,6 @@ public class HomeActivity extends AppCompatActivity {
         DBHelper dbHelper = new DBHelper(this);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM user", null);
-
-        // --- 수정된 부분: 프로필 이미지 클릭 리스너 추가 ---
-        ImageView profileImage = findViewById(R.id.profileImage);
-        profileImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // ProfileActivity로 이동하는 Intent
-                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
-                startActivity(intent);
-            }
-        });
-        // --------------------------------------------------
 
         if (cursor != null) {
             Log.d("DB_DEBUG", "Cursor count: " + cursor.getCount());
@@ -120,6 +113,43 @@ public class HomeActivity extends AppCompatActivity {
 
         adapter = new SubscriptionAdapter(subscriptionList);
         recyclerView.setAdapter(adapter);
+
+        // --- 수정된 부분: 프로필 이미지 클릭 리스너 추가 ---
+        ImageView profileImage = findViewById(R.id.profileImage);
+        profileImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // ProfileActivity로 이동하는 Intent
+                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
+
+                // 이미 계산된 지출 총액(totalOverallAmount) 전달
+                intent.putExtra("totalOverallAmount", totalOverall);
+
+                // 구독 서비스 개수 전달
+                intent.putExtra("subscriptionCount", subscriptionList.size());
+                startActivity(intent);
+            }
+        });
+
+        // 캘린더 버튼 초기화 및 클릭 리스너 설정
+        calendarButton = findViewById(R.id.calendarButton);
+        calendarButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(HomeActivity.this, CalendarActivity.class);
+
+                // 이번 달 결제액
+                intent.putExtra("totalCurrentMonth", totalCurrentMonth);
+
+                // 결제일 리스트
+                intent.putStringArrayListExtra("paymentDates", paymentDates);
+
+                // 구독 리스트
+                intent.putExtra("subscriptionList", new ArrayList<>(subscriptionList));
+
+                startActivity(intent);
+            }
+        });
 
 
         // 하단 메뉴 버튼 처리
@@ -182,10 +212,12 @@ public class HomeActivity extends AppCompatActivity {
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
+                        // 데이터 리스트 및 변수 초기화
                         subscriptionList.clear();
+                        paymentDates.clear();
+                        totalCurrentMonth = 0;
 
 
-                        int totalOverall = 0;      // 총 지출총액
 
                         Calendar now = Calendar.getInstance();
                         int currentYear = now.get(Calendar.YEAR);
@@ -195,9 +227,14 @@ public class HomeActivity extends AppCompatActivity {
                             Subscription s = doc.toObject(Subscription.class);
                             subscriptionList.add(s);
 
+                            // CalendarActivity로 전달할 결제 날짜 추가
+                            if (s.getDate() != null && !s.getDate().isEmpty()) {
+                                paymentDates.add(s.getDate());
+                            }
+
                             try {
                                 // 구독 시작일
-                                Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse(s.getDate());
+                                Date startDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(s.getDate());
                                 Calendar subStart = Calendar.getInstance();
                                 subStart.setTime(startDate);
                                 int subYear = subStart.get(Calendar.YEAR);
@@ -223,12 +260,12 @@ public class HomeActivity extends AppCompatActivity {
 
                         adapter.notifyDataSetChanged();
 
-                        // 이번 달 결제액, 총 지출총액 업데이트
+                        // 이번 달 결제액, 총 지출총액 UI 업데이트
                         totalSubscriptionAmount.setText("₩" + String.format("%,d", totalCurrentMonth));
                         paymentComplete.setText(currentMonth + "월 결제 완료");
                         totalOverallAmount.setText("₩" + String.format("%,d", totalOverall));
 
-                        // 다음 결제 예정 계산
+                        // 다음 결제 예정 계산 및 UI 업데이트
                         NextPayment nextPay = getNextPayment(subscriptionList);
                         if (nextPay != null) {
                             nextPaymentDate.setText(nextPay.daysLeft + "일 뒤 : ");

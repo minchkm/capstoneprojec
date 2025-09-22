@@ -2,7 +2,10 @@ package com.project.gudasi;
 
 import com.google.firebase.firestore.PropertyName;
 
-public class Subscription {
+import java.io.Serial;
+import java.io.Serializable;
+
+public class Subscription implements Serializable {
     private int id;
     private String subject;
     private String date;

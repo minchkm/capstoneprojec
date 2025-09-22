@@ -30,6 +30,22 @@
           }
         },
         {
+          "client_id": "771540615595-chb82ueei86grkcdgat12kb32v38nkvv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.project.gudasi",
+            "certificate_hash": "0da736526aa4a4e01c2928dca50106335645535c"
+          }
+        },
+        {
+          "client_id": "771540615595-kiovj07a2taldd65nrdo9rb9k72hq00k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.project.gudasi",
+            "certificate_hash": "8799fbe20eb5afaa520f39f5af14740fa6548eca"
+          }
+        },
+        {
           "client_id": "771540615595-v7d471kvt26pl1oppojrkvgrr7onge7q.apps.googleusercontent.com",
           "client_type": 3
         }
