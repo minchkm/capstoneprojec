@@ -1,37 +1,40 @@
 package com.project.gudasi;
 
+import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.text.style.ForegroundColorSpan;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
+import com.prolificinteractive.materialcalendarview.DayViewDecorator;
+import com.prolificinteractive.materialcalendarview.DayViewFacade;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 public class CalendarActivity extends AppCompatActivity {
 
     private MaterialCalendarView calendarView;
-    private TextView tvMonthlyTotal;
     private RecyclerView rvPayments;
     private PaymentAdapter paymentAdapter;
+    private TextView tvMonthlyTotal;
 
     private List<Subscription> subscriptionList;
-    private Map<CalendarDay, List<Subscription>> paymentMap = new HashMap<>();
+    private HashMap<CalendarDay, List<Subscription>> paymentMap = new HashMap<>();
 
     private ImageButton backButton;
 
@@ -48,64 +51,41 @@ public class CalendarActivity extends AppCompatActivity {
         paymentAdapter = new PaymentAdapter(new ArrayList<>());
         rvPayments.setAdapter(paymentAdapter);
 
-        backButton = findViewById(R.id.backButton);
-
-        // --- 뒤로가기 버튼 클릭 리스너 추가 ---
-        ImageButton backButton = findViewById(R.id.backButton);
-        if (backButton != null) {
-            backButton.setOnClickListener(v -> finish());
-        }
-
-        // HomeActivity에서 받은 데이터
-        subscriptionList = (List<Subscription>) getIntent().getSerializableExtra("subscriptionList");
-        int totalCurrentMonth = getIntent().getIntExtra("totalCurrentMonth", 0);
+        // HomeActivity에서 데이터 가져오기
+        Intent intent = getIntent();
+        subscriptionList = (List<Subscription>) intent.getSerializableExtra("subscriptionList");
+        int totalCurrentMonth = intent.getIntExtra("totalCurrentMonth", 0);
 
         tvMonthlyTotal.setText("이번 달 결제액: ₩" + String.format("%,d", totalCurrentMonth));
 
+        // 날짜별 결제일 계산
         List<CalendarDay> allPaymentDates = new ArrayList<>();
-
         if (subscriptionList != null) {
             for (Subscription s : subscriptionList) {
-                try {
-                    Date startDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(s.getDate());
-                    Calendar paymentCal = Calendar.getInstance();
-                    paymentCal.setTime(startDate);
+                List<CalendarDay> dates = getPaymentDates(s);
+                allPaymentDates.addAll(dates);
 
-                    String renewalStr = s.getRenewalPrice();
-                    String[] parts = renewalStr.split("/");
-                    String unit = parts.length > 1 ? parts[1] : "1개월";
-
-                    Calendar now = Calendar.getInstance();
-
-                    // 반복 결제일 계산
-                    while (paymentCal.before(now)) {
-                        if (unit.contains("년")) paymentCal.add(Calendar.YEAR, 1);
-                        else paymentCal.add(Calendar.MONTH, 1);
+                for (CalendarDay d : dates) {
+                    if (!paymentMap.containsKey(d)) {
+                        paymentMap.put(d, new ArrayList<>());
                     }
-
-                    // 앞으로 12개월 또는 1년 단위 반복
-                    Calendar tempCal = (Calendar) paymentCal.clone();
-                    for (int i = 0; i < 12; i++) {
-                        CalendarDay day = CalendarDay.from(tempCal.get(Calendar.YEAR), tempCal.get(Calendar.MONTH) + 1, tempCal.get(Calendar.DAY_OF_MONTH));
-                        allPaymentDates.add(day);
-
-                        if (!paymentMap.containsKey(day)) {
-                            paymentMap.put(day, new ArrayList<>());
-                        }
-                        paymentMap.get(day).add(s);
-
-                        if (unit.contains("년")) tempCal.add(Calendar.YEAR, 1);
-                        else tempCal.add(Calendar.MONTH, 1);
-                    }
-
-                } catch (ParseException e) {
-                    e.printStackTrace();
+                    paymentMap.get(d).add(s);
                 }
             }
         }
 
-        // 캘린더 하이라이트
-        calendarView.addDecorator(new EventDecorator(Color.WHITE, allPaymentDates));
+        calendarView.setWeekDayTextAppearance(R.style.CalendarWhiteText);
+        calendarView.setDateTextAppearance(R.style.CalendarWhiteText);
+
+
+        // 캘린더 데코레이터 적용
+        calendarView.addDecorators(
+                new OutOfMonthDecorator(),
+                new EventDecorator(allPaymentDates),
+                new SaturdayDecorator(),
+                new SundayDecorator(),
+                new WeekdayDecorator()
+        );
 
         // 날짜 클릭 이벤트
         calendarView.setOnDateChangedListener((widget, date, selected) -> {
@@ -117,5 +97,133 @@ public class CalendarActivity extends AppCompatActivity {
                 Toast.makeText(this, "이 날은 결제 예정이 없습니다.", Toast.LENGTH_SHORT).show();
             }
         });
+
+        backButton = findViewById(R.id.backButton);
+        // --- 뒤로가기 버튼 클릭 리스너 추가 ---
+        ImageButton backButton = findViewById(R.id.backButton);
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> finish());
+        }
+    }
+
+    // 구독 결제일 계산 (연/월 단위 반영)
+    private List<CalendarDay> getPaymentDates(Subscription s) {
+        List<CalendarDay> result = new ArrayList<>();
+        String dateStr = s.getDate();
+        if (dateStr == null || dateStr.isEmpty()) return result;
+
+        String renewal = s.getRenewalPrice();
+        String[] parts = renewal.split("/");
+        String unit = parts.length > 1 ? parts[1] : "1개월";
+
+        Calendar now = Calendar.getInstance();
+        Calendar end = Calendar.getInstance();
+        end.add(Calendar.YEAR, 1); // 1년 범위 내 표시, 필요 시 더 늘릴 수 있음
+
+        Calendar payment = Calendar.getInstance();
+        try {
+            String[] ymd = dateStr.split("-");
+            payment.set(Integer.parseInt(ymd[0]), Integer.parseInt(ymd[1]) - 1, Integer.parseInt(ymd[2]));
+
+            while (!payment.after(end)) {
+                result.add(CalendarDay.from(payment));
+
+                if (unit.contains("년")) {
+                    payment.add(Calendar.YEAR, 1);
+                } else {
+                    payment.add(Calendar.MONTH, 1);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+
+    // 이전/다음 달 날짜 회색
+    public class OutOfMonthDecorator implements DayViewDecorator {
+        @Override
+        public boolean shouldDecorate(CalendarDay day) {
+            Calendar today = Calendar.getInstance();
+            return day.getMonth() != today.get(Calendar.MONTH);
+        }
+
+        @Override
+        public void decorate(DayViewFacade view) {
+            view.addSpan(new android.text.style.ForegroundColorSpan(Color.GRAY));
+        }
+    }
+
+    // 토요일 파랑
+    public class SaturdayDecorator implements DayViewDecorator {
+        @Override
+        public boolean shouldDecorate(CalendarDay day) {
+            Calendar c = Calendar.getInstance();
+            c.set(day.getYear(), day.getMonth(), day.getDay());
+            return c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY;
+        }
+
+        @Override
+        public void decorate(DayViewFacade view) {
+            view.addSpan(new android.text.style.ForegroundColorSpan(Color.BLUE));
+        }
+    }
+
+    // 일요일 빨강
+    public class SundayDecorator implements DayViewDecorator {
+        @Override
+        public boolean shouldDecorate(CalendarDay day) {
+            Calendar c = Calendar.getInstance();
+            c.set(day.getYear(), day.getMonth(), day.getDay());
+            return c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY;
+        }
+
+        @Override
+        public void decorate(DayViewFacade view) {
+            view.addSpan(new android.text.style.ForegroundColorSpan(Color.RED));
+        }
+    }
+
+    // 이벤트 날짜 (하이라이트)
+    public class EventDecorator implements DayViewDecorator {
+        private final HashSet<CalendarDay> dates;
+
+        public EventDecorator(Collection<CalendarDay> dates) {
+            this.dates = new HashSet<>(dates);
+        }
+
+        @Override
+        public boolean shouldDecorate(CalendarDay day) {
+            // 등록된 결제 날짜만 하이라이트
+            return dates.contains(day);
+        }
+
+        @Override
+        public void decorate(DayViewFacade view) {
+            // 동그라미 drawable
+            view.setSelectionDrawable(ContextCompat.getDrawable(CalendarActivity.this, R.drawable.circle_background_black));
+            // 글자 색 검은색
+            view.addSpan(new ForegroundColorSpan(Color.BLACK));
+        }
+    }
+
+
+
+    // 평일 흰색
+    public class WeekdayDecorator implements DayViewDecorator {
+        @Override
+        public boolean shouldDecorate(CalendarDay day) {
+            Calendar c = Calendar.getInstance();
+            c.set(day.getYear(), day.getMonth(), day.getDay());
+            int dow = c.get(Calendar.DAY_OF_WEEK);
+            return dow != Calendar.SATURDAY && dow != Calendar.SUNDAY;
+        }
+
+        @Override
+        public void decorate(DayViewFacade view) {
+            view.addSpan(new android.text.style.ForegroundColorSpan(Color.WHITE));
+        }
     }
 }
