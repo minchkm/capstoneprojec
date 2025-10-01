@@ -1,92 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/black"
-    android:padding="32dp"
-    android:gravity="center_horizontal"
-    android:elevation="12dp"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="12dp"
     android:layout_margin="24dp">
 
-    <!-- 경고 아이콘 -->
-    <ImageView
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/ic_warning_red"
-        android:contentDescription="경고"
-        android:layout_marginBottom="20dp"
-        app:tint="#F44336" />
-
-    <!-- 제목 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="외부 페이지로 이동합니다"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="12dp" />
-
-    <!-- 설명 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Netflix 구독 해지 페이지로 이동하려고 합니다.\n외부 웹사이트에서 해지 절차를 진행하셔야 합니다."
-        android:textColor="#DC4C4C"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:lineSpacingExtra="4dp"
-        android:layout_marginBottom="16dp" />
-
-    <!-- 링크 텍스트 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="www.netflix.com/cancelplan"
-        android:textColor="#E50914"
-        android:textSize="14sp"
-        android:textStyle="italic"
-        android:gravity="center"
-        android:layout_marginBottom="28dp" />
-
-    <!-- 버튼 영역 -->
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:divider="?android:attr/dividerHorizontal"
-        android:showDividers="middle"
-        android:dividerPadding="12dp">
+        android:background="@android:color/white"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
 
-        <Button
-            android:id="@+id/btn_move_cancel"
-            android:layout_width="match_parent"
+        <ImageView
+            android:layout_width="56dp"
             android:layout_height="56dp"
-            android:text="해지 페이지로 이동"
-            android:backgroundTint="#E50914"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textAllCaps="false"
-            android:layout_marginBottom="12dp"
-            android:fontFamily="sans-serif-medium"
-            android:elevation="6dp"
-            android:stateListAnimator="@null"/>
+            android:src="@drawable/ic_open_in_new"
+            android:contentDescription="외부 페이지로 이동"
+            android:layout_marginBottom="20dp"
+            app:tint="@color/purple_500" />
 
-        <Button
-            android:id="@+id/btn_cancel"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="외부 페이지로 이동"
+            android:textColor="#1D2430"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="구독 해지를 위해 Netflix 페이지로 이동합니다. 해지 절차는 외부 웹사이트에서 진행됩니다."
+            android:textColor="#555"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:lineSpacingExtra="5dp"
+            android:layout_marginBottom="24dp" />
+
+        <LinearLayout
+            android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="취소"
-            android:backgroundTint="#444444"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textAllCaps="false"
-            android:fontFamily="sans-serif-medium"
-            android:elevation="4dp"
-            android:stateListAnimator="@null"/>
+            android:layout_height="wrap_content"
+            android:gravity="center">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_move_cancel"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="해지 페이지로 이동"
+                app:cornerRadius="16dp"
+                android:backgroundTint="@color/purple_500"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="sans-serif-medium"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_cancel"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="취소"
+                app:cornerRadius="16dp"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif-medium"/>
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</androidx.cardview.widget.CardView>

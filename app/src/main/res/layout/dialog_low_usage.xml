@@ -1,138 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#23262B"
-    android:padding="24dp"
-    android:gravity="center_horizontal">
+    app:cardCornerRadius="28dp"
+    app:cardElevation="12dp"
+    android:layout_margin="24dp">
 
-    <!-- Google One 아이콘과 이름 -->
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
-
-        <ImageView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@drawable/ic_youtube_music"
-            android:contentDescription="Youtube"
-            android:layout_marginEnd="8dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Youtube"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:textStyle="bold"/>
-    </LinearLayout>
-
-    <!-- 사용시간 정보 -->
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp">
-
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="9월 사용시간: 15분"
-            android:textColor="#CCCCCC"
-            android:textSize="15sp"/>
-    </LinearLayout>
-
-    <!-- 경고/안내 박스 -->
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="20dp"
-        android:layout_marginBottom="24dp"
-        android:gravity="center_horizontal"
-        android:background="@drawable/gradient_warning_bg"
-        android:elevation="6dp"
-        android:clipToOutline="true"
-        android:layout_marginTop="8dp">
+        android:background="@android:color/white"
+        android:padding="24dp">
 
-        <!-- 경고 메시지 -->
         <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="16dp">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_warning_red"
-                android:contentDescription="경고"
-                android:layout_marginEnd="6dp"/>
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_youtube_music"
+                android:layout_marginEnd="12dp"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="2개월 연속 15분 사용 중입니다."
-                android:textColor="#FFD600"
-                android:textSize="16sp"
+                android:text="Youtube"
+                android:textColor="#1D2430"
+                android:textSize="22sp"
                 android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- 구독 가격 정보 -->
-        <TextView
-            android:layout_width="wrap_content"
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="💰 구독 금액: ₩ 19,500/월"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp"/>
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#FFF8E1"
+            android:layout_marginBottom="24dp">
 
-        <!-- 안내 문구 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_info_outline_modern"
+                    app:tint="#FFB300"
+                    android:layout_marginEnd="12dp"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2개월 연속 사용량이 적습니다."
+                        android:textColor="#614A00"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="월 19,500원이 결제되고 있어요."
+                        android:textColor="#8C6D00"
+                        android:textSize="14sp"/>
+                </LinearLayout>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="구독을 유지하실 건가요?"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"/>
+            android:text="이 구독을 계속 유지하시겠어요?"
+            android:textColor="#333"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:layout_marginBottom="24dp"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_ignore"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                android:text="그대로 두기"
+                android:textColor="#555"
+
+                android:textSize="16sp"
+                android:layout_marginEnd="8dp"
+                android:fontFamily="sans-serif-medium"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_cancel"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                android:text="해지하기"
+                app:cornerRadius="16dp"
+                android:backgroundTint="#E53935"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif-medium"/>
+        </LinearLayout>
     </LinearLayout>
-
-    <!-- 버튼 영역 -->
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="8dp">
-
-        <!-- 뒤로가기 버튼 (어두운 3D 느낌) -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_ignore"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:text="뒤로 가기"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:layout_marginEnd="10dp"
-            android:background="@drawable/btn_dark_3d"/>
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_cancel"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:text="해지하러 가기"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:background="@drawable/btn_red_3d"/>
-
-    </LinearLayout>
-</LinearLayout>
+</androidx.cardview.widget.CardView>
