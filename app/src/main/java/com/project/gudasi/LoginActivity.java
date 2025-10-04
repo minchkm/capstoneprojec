@@ -9,7 +9,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -18,7 +17,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
-
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -55,15 +53,14 @@ public class LoginActivity extends AppCompatActivity {
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        findViewById(R.id.sign_in_button).setOnClickListener(v -> signIn());
+        // ▼▼▼▼▼▼▼▼▼▼ 수정된 부분 ▼▼▼▼▼▼▼▼▼▼
+        // 클릭 리스너의 대상을 'sign_in_button'에서 'sign_in_button_layout'으로 변경
+        findViewById(R.id.sign_in_button_layout).setOnClickListener(v -> signIn());
+        // ▲▲▲▲▲▲▲▲▲▲ 수정된 부분 ▲▲▲▲▲▲▲▲▲▲
 
         recyclerView = findViewById(R.id.appCarouselRecyclerView);
 
-        // spanCount는 각 줄 아이템 수 합: 4 + 6 + 5 = 15
         GridLayoutManager layoutManager = new GridLayoutManager(this, 3, GridLayoutManager.HORIZONTAL, false);
-
-        // SpanSizeLookup 이용해 줄별 배치 아이템 개수에 맞게 spanSize 설정 가능 (필요시 추가)
-
         recyclerView.setLayoutManager(layoutManager);
 
         List<AppItem> appList = Arrays.asList(
@@ -74,14 +71,6 @@ public class LoginActivity extends AppCompatActivity {
                 new AppItem(R.drawable.ic_coupang, "쿠팡"),
                 new AppItem(R.drawable.ic_watcha, "왓챠")
         );
-
-       /* List<AppItem> appList = Arrays.asList(
-                new AppItem(R.drawable.ic_app_youtube, "유튜브"),
-                new AppItem(R.drawable.ic_app_netflix, "넷플릭스"),
-                new AppItem(R.drawable.ic_app_spotify, "스포티파이"),
-                new AppItem(R.drawable.ic_app_wavve, "웨이브"),
-                new AppItem(R.drawable.ic_app_tving, "티빙"),
-                new AppItem(R.drawable.ic_app_melon, "멜론")  */
 
         adapter = new AppIconAdapter(appList);
         recyclerView.setAdapter(adapter);

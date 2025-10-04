@@ -1,4 +1,4 @@
-package com.project.gudasi; // ← 앱 패키지에 맞게 수정
+package com.project.gudasi;
 
 import android.content.Intent;
 import android.database.Cursor;
@@ -35,7 +35,7 @@ public class HomeActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private SubscriptionAdapter adapter;
     private List<Subscription> subscriptionList = new ArrayList<>();
-    private ArrayList<String> paymentDates = new ArrayList<>(); // 결제 날짜 리스트
+    private ArrayList<String> paymentDates = new ArrayList<>();
     private FirebaseFirestore firedb;
     private TextView totalSubscriptionAmount;
     private TextView totalOverallAmount;
@@ -45,61 +45,51 @@ public class HomeActivity extends AppCompatActivity {
     private TextView mainTitle;
     private ImageView calendarButton;
 
-    public int totalCurrentMonth = 0; // 이번 달 결제액
-    int totalOverall = 0;      // 총 지출총액
-
+    public int totalCurrentMonth = 0;
+    int totalOverall = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home); // 현재 액티비티 레이아웃
+        setContentView(R.layout.activity_home);
 
+        // XML ID와 일치하도록 뷰 초기화
         mainTitle = findViewById(R.id.mainTitle);
-
         totalSubscriptionAmount = findViewById(R.id.totalSubscriptionAmount);
         totalOverallAmount = findViewById(R.id.totalOverallAmount);
-
         nextPaymentDate = findViewById(R.id.nextPaymentDate);
         nextPaymentPrice = findViewById(R.id.nextpaymentPrice);
-
         paymentComplete = findViewById(R.id.paymentComplete);
+        calendarButton = findViewById(R.id.calendarButton);
 
         FirebaseApp.initializeApp(this);
         firedb = FirebaseFirestore.getInstance();
 
         DBHelper dbHelper = new DBHelper(this);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM user", null);
-
-        if (cursor != null) {
-            Log.d("DB_DEBUG", "Cursor count: " + cursor.getCount());
-            Log.d("DB_DEBUG", "Columns: " + Arrays.toString(cursor.getColumnNames()));
-        }
+        Cursor cursor = db.rawQuery("SELECT name, email FROM user LIMIT 1", null);
 
         if (cursor != null && cursor.moveToFirst()) {
             int nameIndex = cursor.getColumnIndex("name");
             int emailIndex = cursor.getColumnIndex("email");
 
             if (nameIndex != -1) {
-                String name = cursor.getString(nameIndex); // DB에서 직접 가져오기
+                String name = cursor.getString(nameIndex);
                 TextView userName = findViewById(R.id.userName);
                 userName.setText(name + "님");
             }
 
             if (emailIndex != -1) {
-                String email = cursor.getString(emailIndex); // 이메일
+                String email = cursor.getString(emailIndex);
                 Log.d("DB_DEBUG", "로그인한 이메일: " + email);
-
                 loadSubscriptions(email);
             } else {
-                Log.e("DB_ERROR", "컬럼 인덱스를 찾을 수 없습니다.");
+                Log.e("DB_ERROR", "이메일 컬럼 인덱스를 찾을 수 없습니다.");
             }
+            cursor.close();
         } else {
             Toast.makeText(this, "사용자 정보가 없습니다.", Toast.LENGTH_SHORT).show();
         }
-
-
-        if (cursor != null) cursor.close();
         db.close();
 
         recyclerView = findViewById(R.id.subscriptionRecyclerView);
@@ -107,52 +97,23 @@ public class HomeActivity extends AppCompatActivity {
         adapter = new SubscriptionAdapter(subscriptionList);
         recyclerView.setAdapter(adapter);
 
-        FirebaseApp.initializeApp(this);
-        recyclerView = findViewById(R.id.subscriptionRecyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        adapter = new SubscriptionAdapter(subscriptionList);
-        recyclerView.setAdapter(adapter);
-
-        // --- 수정된 부분: 프로필 이미지 클릭 리스너 추가 ---
-        ImageView profileImage = findViewById(R.id.profileImage);
-        profileImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // ProfileActivity로 이동하는 Intent
-                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
-
-                // 이미 계산된 지출 총액(totalOverallAmount) 전달
-                intent.putExtra("totalOverallAmount", totalOverall);
-
-                // 구독 서비스 개수 전달
-                intent.putExtra("subscriptionCount", subscriptionList.size());
-                startActivity(intent);
-            }
+        // --- 수정된 부분: profileImage를 ImageView에서 TextView로 변경 ---
+        TextView profileImage = findViewById(R.id.profileImage);
+        profileImage.setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
+            intent.putExtra("totalOverallAmount", totalOverall);
+            intent.putExtra("subscriptionCount", subscriptionList.size());
+            startActivity(intent);
         });
 
-        // 캘린더 버튼 초기화 및 클릭 리스너 설정
-        calendarButton = findViewById(R.id.calendarButton);
-        calendarButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(HomeActivity.this, CalendarActivity.class);
-
-                // 이번 달 결제액
-                intent.putExtra("totalCurrentMonth", totalCurrentMonth);
-
-                // 결제일 리스트
-                intent.putStringArrayListExtra("paymentDates", paymentDates);
-
-                // 구독 리스트
-                intent.putExtra("subscriptionList", new ArrayList<>(subscriptionList));
-
-                startActivity(intent);
-            }
+        calendarButton.setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, CalendarActivity.class);
+            intent.putExtra("totalCurrentMonth", totalCurrentMonth);
+            intent.putStringArrayListExtra("paymentDates", paymentDates);
+            intent.putExtra("subscriptionList", (Serializable) subscriptionList);
+            startActivity(intent);
         });
 
-
-        // 하단 메뉴 버튼 처리
         setupBottomNavigation();
     }
 
@@ -168,9 +129,11 @@ public class HomeActivity extends AppCompatActivity {
 
         for (Subscription s : subscriptions) {
             try {
-                Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse(s.getDate());
+                Date startDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(s.getDate());
                 Calendar paymentDate = Calendar.getInstance();
-                paymentDate.setTime(startDate);
+                if (startDate != null) {
+                    paymentDate.setTime(startDate);
+                }
 
                 String renewalStr = s.getRenewalPrice();
                 String[] parts = renewalStr.split("/");
@@ -178,26 +141,23 @@ public class HomeActivity extends AppCompatActivity {
 
                 int price = parsePriceString(s.getRenewalPrice());
 
-                // 반복되는 결제일 계산
                 while (paymentDate.before(now)) {
                     if (unit.contains("년")) {
-                        paymentDate.add(Calendar.YEAR, 1); // 1년 단위
+                        paymentDate.add(Calendar.YEAR, 1);
                     } else {
-                        paymentDate.add(Calendar.MONTH, 1); // 1개월 단위
+                        paymentDate.add(Calendar.MONTH, 1);
                     }
                 }
 
                 long diffMillis = paymentDate.getTimeInMillis() - now.getTimeInMillis();
                 long diffDays = TimeUnit.MILLISECONDS.toDays(diffMillis);
 
-                // 가장 가까운 결제일 선택
                 if (nextPayment == null || diffDays < nextPayment.daysLeft) {
                     nextPayment = new NextPayment();
                     nextPayment.serviceName = s.getServiceName();
                     nextPayment.price = price;
                     nextPayment.daysLeft = diffDays;
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -212,39 +172,34 @@ public class HomeActivity extends AppCompatActivity {
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // 데이터 리스트 및 변수 초기화
                         subscriptionList.clear();
                         paymentDates.clear();
                         totalCurrentMonth = 0;
-
-
+                        totalOverall = 0;
 
                         Calendar now = Calendar.getInstance();
                         int currentYear = now.get(Calendar.YEAR);
-                        int currentMonth = now.get(Calendar.MONTH) + 1; // Calendar.MONTH는 0~11
+                        int currentMonthVal = now.get(Calendar.MONTH) + 1;
 
                         for (QueryDocumentSnapshot doc : task.getResult()) {
                             Subscription s = doc.toObject(Subscription.class);
                             subscriptionList.add(s);
 
-                            // CalendarActivity로 전달할 결제 날짜 추가
                             if (s.getDate() != null && !s.getDate().isEmpty()) {
                                 paymentDates.add(s.getDate());
                             }
 
                             try {
-                                // 구독 시작일
                                 Date startDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(s.getDate());
                                 Calendar subStart = Calendar.getInstance();
-                                subStart.setTime(startDate);
+                                if(startDate != null) {
+                                    subStart.setTime(startDate);
+                                }
                                 int subYear = subStart.get(Calendar.YEAR);
                                 int subMonth = subStart.get(Calendar.MONTH) + 1;
 
-                                // 이번 달 결제액 계산
-                                int monthlyPayment = getMonthlyPayment(s.getRenewalPrice(), subMonth, subYear, currentMonth, currentYear);
-                                totalCurrentMonth += monthlyPayment;
+                                totalCurrentMonth += getMonthlyPayment(s.getRenewalPrice(), subMonth, subYear, currentMonthVal, currentYear);
 
-                                // 총 지출총액 계산
                                 int months = getMonthsBetween(s.getDate());
                                 if (s.getRenewalPrice().contains("년")) {
                                     int yearsPassed = months / 12 + 1;
@@ -260,20 +215,19 @@ public class HomeActivity extends AppCompatActivity {
 
                         adapter.notifyDataSetChanged();
 
-                        // 이번 달 결제액, 총 지출총액 UI 업데이트
-                        totalSubscriptionAmount.setText("₩" + String.format("%,d", totalCurrentMonth));
-                        paymentComplete.setText(currentMonth + "월 결제 완료");
-                        totalOverallAmount.setText("₩" + String.format("%,d", totalOverall));
+                        totalSubscriptionAmount.setText(String.format(Locale.getDefault(), "₩%,d", totalCurrentMonth));
+                        paymentComplete.setText(currentMonthVal + "월");
+                        totalOverallAmount.setText(String.format(Locale.getDefault(), "₩%,d", totalOverall));
 
-                        // 다음 결제 예정 계산 및 UI 업데이트
                         NextPayment nextPay = getNextPayment(subscriptionList);
                         if (nextPay != null) {
-                            nextPaymentDate.setText(nextPay.daysLeft + "일 뒤 : ");
-                            nextPaymentPrice.setText(String.format("₩%,d", nextPay.price));
+                            nextPaymentDate.setText(nextPay.daysLeft + "일 뒤");
+                            nextPaymentPrice.setText(String.format(Locale.getDefault(), "₩%,d", nextPay.price));
                             mainTitle.setText(nextPay.serviceName + ", " + nextPay.daysLeft + "일 뒤 결제돼요");
                         } else {
-                            nextPaymentDate.setText("다음 결제 예정 없음");
+                            nextPaymentDate.setText("결제 예정 없음");
                             nextPaymentPrice.setText("");
+                            mainTitle.setText("새로운 구독을 추가해보세요!");
                         }
 
                     } else {
@@ -282,29 +236,28 @@ public class HomeActivity extends AppCompatActivity {
                 });
     }
 
-
-    // 개월 수를 계산하는 함수
     private int getMonthsBetween(String startDateStr) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         try {
             Date startDate = sdf.parse(startDateStr);
             Calendar startCal = Calendar.getInstance();
-            startCal.setTime(startDate);
+            if(startDate != null) {
+                startCal.setTime(startDate);
+            }
 
             Calendar now = Calendar.getInstance();
-
             int yearDiff = now.get(Calendar.YEAR) - startCal.get(Calendar.YEAR);
             int monthDiff = now.get(Calendar.MONTH) - startCal.get(Calendar.MONTH);
 
-            return yearDiff * 12 + monthDiff + 1; // 구독 시작 월 포함
+            return yearDiff * 12 + monthDiff + 1;
         } catch (ParseException e) {
             e.printStackTrace();
             return 0;
         }
     }
 
-    // 가격 문자열 숫자만 추출
     private int parsePriceString(String priceStr) {
+        if (priceStr == null || priceStr.isEmpty()) return 0;
         try {
             String[] parts = priceStr.split("/");
             return Integer.parseInt(parts[0].replaceAll("[^0-9]", ""));
@@ -314,23 +267,16 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    //
     private int getMonthlyPayment(String renewalStr, int startMonth, int startYear, int currentMonth, int currentYear) {
-        // renewalStr 예: "₩14,000/1년", "₩12,000/1개월"
+        if (renewalStr == null || renewalStr.isEmpty()) return 0;
         try {
             String[] parts = renewalStr.split("/");
             int price = Integer.parseInt(parts[0].replaceAll("[^0-9]", ""));
             String unit = parts.length > 1 ? parts[1] : "1개월";
 
             if (unit.contains("년")) {
-                // 연 단위는 구독 시작월과 현재 월이 같은 경우에만 이번 달 결제액에 포함
-                if (startMonth == currentMonth && startYear <= currentYear) {
-                    return price; // 1년에 한 번만 계산
-                } else {
-                    return 0; // 나머지 달에는 0
-                }
+                return (startMonth == currentMonth && startYear <= currentYear) ? price : 0;
             } else {
-                // 월 단위는 그대로
                 return price;
             }
         } catch (Exception e) {
@@ -342,33 +288,43 @@ public class HomeActivity extends AppCompatActivity {
     private void setupBottomNavigation() {
         View bottomBar = findViewById(R.id.bottom_bar_include);
 
-        // 하단 메뉴 버튼들 참조
-        ImageView btnHome = bottomBar.findViewById(R.id.btnHome);
-        ImageView btnRanking = bottomBar.findViewById(R.id.btnRanking);
-        ImageView btnAppUsage = bottomBar.findViewById(R.id.btnAppUsage);
+        // --- 수정된 부분: ImageView 대신 View로 선언 ---
+        View btnHome = bottomBar.findViewById(R.id.homeButton);
+        View btnChat = bottomBar.findViewById(R.id.chatButton);
+        View btnAppUsage = bottomBar.findViewById(R.id.usageTimeButton);
 
-        // 이 밖의 다른 버튼이 있다면 여기에 포함
+        ImageView homeIcon = bottomBar.findViewById(R.id.homeIcon);
+        TextView homeText = bottomBar.findViewById(R.id.homeText);
+        ImageView chatIcon = bottomBar.findViewById(R.id.chatIcon);
+        TextView chatText = bottomBar.findViewById(R.id.chatText);
+        ImageView usageIcon = bottomBar.findViewById(R.id.usageTimeIcon);
+        TextView usageText = bottomBar.findViewById(R.id.usageTimeText);
 
-        int defaultColor = Color.parseColor("#666666");
-        int selectedColor = Color.parseColor("#FFFFFF");
+        int defaultColor = Color.parseColor("#8A94A4");
+        int selectedColor = Color.parseColor("#007BFF");
 
-        // 기본 색상 설정 (현재 Home이 선택됨)
-        btnHome.setColorFilter(selectedColor);
-        btnRanking.setColorFilter(defaultColor);
-        btnAppUsage.setColorFilter(defaultColor);
+        homeIcon.setColorFilter(selectedColor);
+        homeText.setTextColor(selectedColor);
+        homeText.setTypeface(null, android.graphics.Typeface.BOLD);
 
-        // 버튼 클릭 리스너 설정
-        btnHome.setOnClickListener(v -> {
-            // 현재 페이지이므로 아무것도 하지 않음
+        chatIcon.setColorFilter(defaultColor);
+        chatText.setTextColor(defaultColor);
+        chatText.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+        usageIcon.setColorFilter(defaultColor);
+        usageText.setTextColor(defaultColor);
+        usageText.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+        btnHome.setOnClickListener(v -> {});
+
+        btnAppUsage.setOnClickListener(v -> {
+            startActivity(new Intent(HomeActivity.this, UsageStatsActivity.class));
+            finish();
         });
 
-      btnAppUsage.setOnClickListener(v-> {
-          startActivity((new Intent(HomeActivity.this, UsageStatsActivity.class)));
-      });
-
-        // 여기서 btnAppUsage의 클릭 동작을 챗봇 화면으로 변경
-        btnRanking.setOnClickListener(v -> {
+        btnChat.setOnClickListener(v -> {
             startActivity(new Intent(HomeActivity.this, ChatActivity.class));
+            finish();
         });
     }
 }

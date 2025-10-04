@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -31,32 +32,29 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
-        // 뷰 초기화
         etMessageInput = findViewById(R.id.etMessageInput)
         btnSend = findViewById(R.id.btnSend)
         rvChatMessages = findViewById(R.id.rvChatMessages)
+        val backButton: ImageButton = findViewById(R.id.backButton)
+        backButton.setOnClickListener { finish() }
 
-        // Gemini 모델 초기화
         try {
             generativeModel = GenerativeModel(
-                // ✅ 지원되는 모델명으로 변경
-                modelName = "models/gemini-1.5-flash",
+                modelName = "gemini-1.5-flash",
                 apiKey = BuildConfig.API_KEY
             )
         } catch (e: Exception) {
             Log.e("Gemini", "Gemini 모델 초기화 실패: ${e.message}")
-            addMessage("Gemini 모델 초기화 실패: ${e.message}", false)
+            addMessage("Gemini 모델 초기화에 실패했습니다. API 키를 확인해주세요.", false)
             return
         }
 
-        // RecyclerView 설정
         chatAdapter = ChatAdapter(messageList)
         rvChatMessages.layoutManager = LinearLayoutManager(this).apply {
-            stackFromEnd = true // 키보드 올라올 때 스크롤 유지
+            stackFromEnd = true
         }
         rvChatMessages.adapter = chatAdapter
 
-        // 전송 버튼 클릭 리스너
         btnSend.setOnClickListener {
             val userMessage = etMessageInput.text.toString()
             if (userMessage.isNotBlank()) {
@@ -66,22 +64,18 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-
-        // 하단 메뉴 버튼 처리
         setupBottomNavigation()
     }
 
-    // 메시지를 리스트에 추가하고 화면 업데이트
     private fun addMessage(text: String, isUser: Boolean) {
         messageList.add(ChatMessage(text, isUser))
         chatAdapter.notifyItemInserted(messageList.size - 1)
-        rvChatMessages.scrollToPosition(messageList.size - 1) // 마지막 메시지로 스크롤
+        rvChatMessages.scrollToPosition(messageList.size - 1)
     }
 
     private fun sendMessageToGemini(userMessage: String) {
         lifecycleScope.launch {
             try {
-                // withContext(Dispatchers.IO)를 사용하여 백그라운드 스레드에서 API 호출
                 val response = withContext(Dispatchers.IO) {
                     generativeModel.generateContent(userMessage)
                 }
@@ -97,49 +91,40 @@ class ChatActivity : AppCompatActivity() {
     private fun setupBottomNavigation() {
         val bottomBar = findViewById<View>(R.id.bottom_bar_include)
 
-        // 하단 메뉴 버튼들 참조
-        val btnHome = bottomBar.findViewById<ImageView>(R.id.btnHome)
-        val btnRanking = bottomBar.findViewById<ImageView>(R.id.btnRanking)
-        val btnAppUsage = bottomBar.findViewById<ImageView>(R.id.btnAppUsage)
+        val btnHome = bottomBar.findViewById<View>(R.id.homeButton)
+        val btnChat = bottomBar.findViewById<View>(R.id.chatButton)
+        val btnAppUsage = bottomBar.findViewById<View>(R.id.usageTimeButton)
 
-        // 이 밖의 다른 버튼이 있다면 여기에 포함
-        val defaultColor = Color.parseColor("#666666")
-        val selectedColor = Color.parseColor("#FFFFFF")
+        val homeIcon = bottomBar.findViewById<ImageView>(R.id.homeIcon)
+        val homeText = bottomBar.findViewById<TextView>(R.id.homeText)
+        val chatIcon = bottomBar.findViewById<ImageView>(R.id.chatIcon)
+        val chatText = bottomBar.findViewById<TextView>(R.id.chatText)
+        val usageIcon = bottomBar.findViewById<ImageView>(R.id.usageTimeIcon)
+        val usageText = bottomBar.findViewById<TextView>(R.id.usageTimeText)
 
-        // 기본 색상 설정 (현재 Home이 선택됨)
-        btnHome.setColorFilter(defaultColor)
-        btnRanking.setColorFilter(selectedColor)
-        btnAppUsage.setColorFilter(defaultColor)
 
-        // 버튼 클릭 리스너 설정
-        btnHome.setOnClickListener { v: View? -> }
+        val defaultColor = Color.parseColor("#888888")
+        val selectedColor = Color.parseColor("#007BFF")
 
-        btnAppUsage.setOnClickListener { v: View? ->
-            startActivity(
-                (Intent(
-                    this@ChatActivity,
-                    UsageStatsActivity::class.java
-                ))
-            )
+        homeIcon.setColorFilter(defaultColor)
+        homeText.setTextColor(defaultColor)
+        chatIcon.setColorFilter(selectedColor)
+        chatText.setTextColor(selectedColor)
+        usageIcon.setColorFilter(defaultColor)
+        usageText.setTextColor(defaultColor)
+
+        btnHome.setOnClickListener {
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish()
         }
 
-        // 여기서 btnAppUsage의 클릭 동작을 챗봇 화면으로 변경
-        btnRanking.setOnClickListener { v: View? ->
-            startActivity(
-                Intent(
-                    this@ChatActivity,
-                    ChatActivity::class.java
-                )
-            )
+        btnAppUsage.setOnClickListener {
+            startActivity(Intent(this, UsageStatsActivity::class.java))
+            finish()
         }
 
-        btnHome.setOnClickListener { v: View? ->
-            startActivity(
-                Intent(
-                    this@ChatActivity,
-                    HomeActivity::class.java
-                )
-            )
+        btnChat.setOnClickListener {
+            // 현재 페이지
         }
     }
 }

@@ -76,5 +76,14 @@
             android:src="@drawable/ic_send"
             app:tint="#FFFFFF"
             android:elevation="2dp" />
+
+
     </LinearLayout>
+
+    <include
+        android:id="@+id/bottom_bar_include"
+        layout="@layout/layout_bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
 </LinearLayout>

@@ -7,13 +7,15 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.button.MaterialButton;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -30,16 +32,12 @@ public class ProfileActivity extends AppCompatActivity {
         int totalCount = intent.getIntExtra("subscriptionCount", 0);
 
         totalSubscriptionAmount.setText("₩ " + String.format("%,d", totalAmount));
-        totalSubscriptionCount.setText(String.format("%,d", totalCount) + "개");
+        totalSubscriptionCount.setText(String.format("%d개", totalCount));
 
-        // --- 뒤로가기 버튼 클릭 리스너 추가 ---
-        ImageView backButton = findViewById(R.id.backButton);
-        if (backButton != null) {
-            backButton.setOnClickListener(v -> finish());
-        }
-        // ------------------------------------
+        ImageButton backButton = findViewById(R.id.backButton);
+        backButton.setOnClickListener(v -> finish());
 
-        // --- 데이터베이스에서 사용자 정보 가져오기 ---
+
         DBHelper dbHelper = new DBHelper(this);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM user", null);
@@ -53,14 +51,12 @@ public class ProfileActivity extends AppCompatActivity {
                 String email = cursor.getString(emailIndex);
 
                 TextView profileName = findViewById(R.id.profileName);
-                if (profileName != null) {
-                    profileName.setText(name);
-                }
+                profileName.setText(name + " 님");
+
 
                 TextView profileEmail = findViewById(R.id.profileEmail);
-                if (profileEmail != null) {
-                    profileEmail.setText(email);
-                }
+                profileEmail.setText(email);
+
             } else {
                 Log.e("DB_ERROR", "컬럼 인덱스를 찾을 수 없습니다.");
             }
@@ -71,20 +67,8 @@ public class ProfileActivity extends AppCompatActivity {
         if (cursor != null) cursor.close();
         db.close();
 
-        // --- ProfileActivity에 존재하는 UI 요소에 대한 리스너 설정 ---
-        LinearLayout showInfoLayout = findViewById(R.id.showInfoLayout);
-        if (showInfoLayout != null) {
-            showInfoLayout.setOnClickListener(v -> {
-                Intent intent2 = new Intent(ProfileActivity.this, MainActivity.class);
-                startActivity(intent2);
-                finish();
-            });
-        }
-
-        LinearLayout logoutLayout = findViewById(R.id.logoutLayout);
-        if (logoutLayout != null) {
-            logoutLayout.setOnClickListener(view -> showLogoutDialog());
-        }
+        TextView logoutLayout = findViewById(R.id.logoutLayout);
+        logoutLayout.setOnClickListener(view -> showLogoutDialog());
     }
 
     private void showLogoutDialog() {
@@ -93,16 +77,13 @@ public class ProfileActivity extends AppCompatActivity {
         builder.setView(dialogView);
 
         AlertDialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         dialog.setCancelable(true);
         dialog.show();
 
-        dialog.getWindow().setLayout(
-                (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
 
-        Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
-        Button btnLogout = dialogView.findViewById(R.id.btn_logout);
+        MaterialButton btnCancel = dialogView.findViewById(R.id.btn_cancel);
+        MaterialButton btnLogout = dialogView.findViewById(R.id.btn_logout);
 
         btnCancel.setOnClickListener(view -> dialog.dismiss());
 
@@ -110,7 +91,16 @@ public class ProfileActivity extends AppCompatActivity {
             Toast.makeText(ProfileActivity.this, "로그아웃 되었습니다", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
 
-            startActivity(new Intent(ProfileActivity.this, LoginActivity.class));
+            // DBHelper를 사용하여 사용자 정보 삭제
+            DBHelper dbHelper = new DBHelper(this);
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            db.execSQL("DELETE FROM user");
+            db.close();
+
+
+            Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
             finish();
         });
     }
