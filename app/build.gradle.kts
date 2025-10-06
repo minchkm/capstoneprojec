@@ -9,7 +9,6 @@ plugins {
 
 val properties = Properties()
 properties.load(FileInputStream(rootProject.file("local.properties")))
-val apiKey = properties.getProperty("API_KEY")
 
 android {
     namespace = "com.project.gudasi"
@@ -21,7 +20,6 @@ android {
         targetSdk = 34 // 최신 안정 버전으로 변경
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "API_KEY", "\"$apiKey\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -47,6 +45,13 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("com.google.ai.client.generativeai:generativeai:0.8.0")
+
+    }
+}
+
 dependencies {
     // AndroidX
     implementation("androidx.core:core-ktx:1.13.1")
@@ -64,6 +69,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-config-ktx")
 
     // Google Services
     implementation("com.google.android.gms:play-services-auth:21.0.0")
@@ -72,7 +78,7 @@ dependencies {
     implementation("com.prolificinteractive:material-calendarview:1.4.3")
 
     // Gemini
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
 
     // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")

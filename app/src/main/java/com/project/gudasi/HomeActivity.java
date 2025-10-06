@@ -1,9 +1,16 @@
 package com.project.gudasi;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.Manifest;
+import android.content.pm.PackageManager;
+
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,10 +19,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -32,11 +43,13 @@ import java.util.concurrent.TimeUnit;
 
 public class HomeActivity extends AppCompatActivity {
 
+    // 알람관련
+    private static final int NOTIFICATION_PERMISSION_CODE = 100;
+
     private RecyclerView recyclerView;
     private SubscriptionAdapter adapter;
     private List<Subscription> subscriptionList = new ArrayList<>();
     private ArrayList<String> paymentDates = new ArrayList<>();
-    private FirebaseFirestore firedb;
     private TextView totalSubscriptionAmount;
     private TextView totalOverallAmount;
     private TextView nextPaymentDate;
@@ -47,6 +60,8 @@ public class HomeActivity extends AppCompatActivity {
 
     public int totalCurrentMonth = 0;
     int totalOverall = 0;
+
+    private FirebaseFirestore firedb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,43 +76,47 @@ public class HomeActivity extends AppCompatActivity {
         nextPaymentPrice = findViewById(R.id.nextpaymentPrice);
         paymentComplete = findViewById(R.id.paymentComplete);
         calendarButton = findViewById(R.id.calendarButton);
+        TextView userName = findViewById(R.id.userName); // userName 뷰를 여기서 초기화
 
-        FirebaseApp.initializeApp(this);
+        // ▼▼▼▼▼ 수정된 부분 시작 ▼▼▼▼▼
+
         firedb = FirebaseFirestore.getInstance();
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        DBHelper dbHelper = new DBHelper(this);
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT name, email FROM user LIMIT 1", null);
+        if (currentUser != null) {
+            String uid = currentUser.getUid();
+            // onCreate에서 초기화한 firedb를 사용
+            firedb.collection("users").document(uid).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String name = documentSnapshot.getString("name");
+                            String email = documentSnapshot.getString("email");
+                            userName.setText(name + "님");
 
-        if (cursor != null && cursor.moveToFirst()) {
-            int nameIndex = cursor.getColumnIndex("name");
-            int emailIndex = cursor.getColumnIndex("email");
-
-            if (nameIndex != -1) {
-                String name = cursor.getString(nameIndex);
-                TextView userName = findViewById(R.id.userName);
-                userName.setText(name + "님");
-            }
-
-            if (emailIndex != -1) {
-                String email = cursor.getString(emailIndex);
-                Log.d("DB_DEBUG", "로그인한 이메일: " + email);
-                loadSubscriptions(email);
-            } else {
-                Log.e("DB_ERROR", "이메일 컬럼 인덱스를 찾을 수 없습니다.");
-            }
-            cursor.close();
+                            if (email != null) {
+                                loadSubscriptions(email);
+                            } else {
+                                Toast.makeText(this, "사용자 이메일 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(this, "사용자 정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "정보를 불러오는 데 실패했습니다.", Toast.LENGTH_SHORT).show();
+                    });
         } else {
-            Toast.makeText(this, "사용자 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "로그인 정보가 없습니다.", Toast.LENGTH_SHORT).show();
         }
-        db.close();
+
+        // ▲▲▲▲▲ 수정된 부분 끝 ▲▲▲▲▲
 
         recyclerView = findViewById(R.id.subscriptionRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new SubscriptionAdapter(subscriptionList);
         recyclerView.setAdapter(adapter);
 
-        // --- 수정된 부분: profileImage를 ImageView에서 TextView로 변경 ---
         TextView profileImage = findViewById(R.id.profileImage);
         profileImage.setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
@@ -113,6 +132,9 @@ public class HomeActivity extends AppCompatActivity {
             intent.putExtra("subscriptionList", (Serializable) subscriptionList);
             startActivity(intent);
         });
+
+        // 알림 권한 요청
+        checkAndRequestNotificationPermission();
 
         setupBottomNavigation();
     }
@@ -224,6 +246,10 @@ public class HomeActivity extends AppCompatActivity {
                             nextPaymentDate.setText(nextPay.daysLeft + "일 뒤");
                             nextPaymentPrice.setText(String.format(Locale.getDefault(), "₩%,d", nextPay.price));
                             mainTitle.setText(nextPay.serviceName + ", " + nextPay.daysLeft + "일 뒤 결제돼요");
+
+                            // 계산된 다음 결제 정보를 기반으로 알림을 예약합니다.
+                            scheduleNotification(nextPay);
+
                         } else {
                             nextPaymentDate.setText("결제 예정 없음");
                             nextPaymentPrice.setText("");
@@ -285,6 +311,60 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // 알림 권한이 있는지 확인하고, 없으면 요청하는 메서드
+    private void checkAndRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13 (API 33) 이상
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_CODE);
+            }
+        }
+    }
+
+    // 결제일 3일 전에 알림을 보내도록 AlarmManager에 예약을 설정하는 메서드
+    private void scheduleNotification(NextPayment payment) {
+        if (payment.daysLeft < 3) return; // 3일 미만 남은 결제는 알림을 설정하지 않음
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(this, AlarmReceiver.class);
+        intent.putExtra("title", payment.serviceName + " 결제 3일 전");
+        intent.putExtra("message", "곧 " + String.format(Locale.getDefault(), "%,d", payment.price) + "원이 결제될 예정이에요.");
+
+        // 각 알림이 고유하도록 PendingIntent에 고유한 requestCode를 부여합니다.
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, payment.serviceName.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        /*
+        // 알림 시간 계산 (오늘 날짜 + (남은 일수 - 3)일)
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, (int) (payment.daysLeft - 3));
+        // 알림은 아침 9시에 울리도록 설정
+        calendar.set(Calendar.HOUR_OF_DAY, 9);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+
+        long triggerTime = calendar.getTimeInMillis();
+
+        */
+
+        // 임시 테스트 (10초 후)ㅗ
+        long triggerTime = System.currentTimeMillis() + 10 * 1000;
+
+        // 현재 시간보다 과거이면 알림을 설정하지 않음
+        if (triggerTime < System.currentTimeMillis()) {
+            return;
+        }
+
+        try {
+            // 정확한 시간에 알림을 설정 (Doze 모드에서도 동작)
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
+        } catch (SecurityException e) {
+            e.printStackTrace();
+            // 사용자가 '알람 및 리마인더' 권한을 허용하지 않은 경우
+            // 이 경우, 일반적인 set() 메서드를 사용할 수 있지만 정확성이 떨어집니다.
+            // alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
+        }
+    }
+
     private void setupBottomNavigation() {
         View bottomBar = findViewById(R.id.bottom_bar_include);
 
@@ -318,7 +398,22 @@ public class HomeActivity extends AppCompatActivity {
         btnHome.setOnClickListener(v -> {});
 
         btnAppUsage.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, UsageStatsActivity.class));
+
+            // 1. UsageStatsActivity로 보낼 값을 변수에 할당합니다.
+            // 이 값은 앱의 로직에 따라 실제 계산된 값이어야 합니다.
+            int totalCurrentMonthValue = totalCurrentMonth; // 예시 값
+
+            // 2. Intent를 생성하여 출발지와 목적지를 지정합니다.
+            Intent intent = new Intent(HomeActivity.this, UsageStatsActivity.class);
+
+            // 3. putExtra() 메소드를 사용하여 데이터를 Intent에 담습니다.
+            //    "key"와 value 쌍으로 데이터를 넣습니다.
+            //    key 값("totalCurrentMonth")은 받는 쪽과 반드시 동일해야 합니다.
+            intent.putExtra("totalCurrentMonth", totalCurrentMonthValue);
+            intent.putExtra("subscriptionList", (Serializable) subscriptionList);
+
+            // 4. startActivity()를 호출하여 Intent를 시스템에 전달하고 Activity를 시작합니다.
+            startActivity(intent);
             finish();
         });
 

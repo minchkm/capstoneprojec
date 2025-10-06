@@ -44,7 +44,7 @@ public class SubscriptionAdapter extends RecyclerView.Adapter<SubscriptionAdapte
         }
 
 
-        // 아이콘 설정 (서비스 이름에 따라 다른 아이콘을 보여주는 로직)
+        // 아이콘 추가
         String serviceName = sub.getServiceName().toLowerCase();
         if (serviceName.contains("netflix")) {
             holder.icon.setImageResource(R.drawable.ic_netflix);
@@ -54,10 +54,28 @@ public class SubscriptionAdapter extends RecyclerView.Adapter<SubscriptionAdapte
             holder.icon.setImageResource(R.drawable.ic_spotify);
         } else if (serviceName.contains("coupang")) {
             holder.icon.setImageResource(R.drawable.ic_coupang);
-        } else if (serviceName.contains("melon")) {
-            holder.icon.setImageResource(R.drawable.ic_melon);
-        } else {
-            holder.icon.setImageResource(R.drawable.ic_default_icon); // 기본 아이콘
+        } else if (serviceName.contains("disney")) {
+            holder.icon.setImageResource(R.drawable.ic_disney_plus);
+        }else if (serviceName.contains("tving")) {
+            holder.icon.setImageResource(R.drawable.ic_tving);
+        }else if (serviceName.contains("wavve")) {
+            holder.icon.setImageResource(R.drawable.ic_wavve);
+        }else if (serviceName.contains("watcha")) {
+            holder.icon.setImageResource(R.drawable.ic_watcha);
+        }else if (serviceName.contains("apple tv")) {
+            holder.icon.setImageResource(R.drawable.ic_apple_tv);
+        }else if (serviceName.contains("emoticon")) {
+            holder.icon.setImageResource(R.drawable.ic_kakao_emoticon);
+        }else if (serviceName.contains("bugs")) {
+            holder.icon.setImageResource(R.drawable.ic_bugs);
+        }else if (serviceName.contains("genie")) {
+            holder.icon.setImageResource(R.drawable.ic_genie);
+        }else if (serviceName.contains("flo")) {
+            holder.icon.setImageResource(R.drawable.ic_flo);
+
+        }
+        else {
+            holder.icon.setImageResource(R.drawable.ic_default_icon); // 기본 아이콘(없을 시 대체용임)
         }
     }
 

@@ -5,63 +5,174 @@ import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.android.material.button.MaterialButton;
 
+import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class UsageStatsActivity extends AppCompatActivity {
 
-    private TextView youtubeTimeText;
-    private TextView youtubeNoteText;
-    private TextView widgetTimeText;
-    private TextView widgetNoteText;
-    private MaterialButton btnCancelYoutube;
-    private MaterialButton btnCancelMemo;
+    private LinearLayout subscriptionUsageLayout;
+    private List<Subscription> subscriptionList;
+    private static final Map<String, String> servicePackageMap = new HashMap<>();
+
+    // 각 서비스 이름과 패키지 이름을 매핑합니다.
+    static {
+        servicePackageMap.put("youtube", "com.google.android.youtube");
+        servicePackageMap.put("netflix", "com.netflix.mediaclient");
+        servicePackageMap.put("tving", "net.cj.cjhv.gs");
+        servicePackageMap.put("wavve", "pooq.android.player");
+        servicePackageMap.put("coupang", "com.coupang.mobile");
+        servicePackageMap.put("disney+", "com.disney.disneyplus");
+        servicePackageMap.put("watcha", "com.frograms.watcha");
+        servicePackageMap.put("spotify", "com.spotify.music");
+        servicePackageMap.put("melon", "com.iloen.melon");
+        // 필요한 다른 앱들도 여기에 추가할 수 있습니다.
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_usage_stats);
 
-        int totalCurrentMonth = getIntent().getIntExtra("totalCurrentMonth", 0);
+        subscriptionUsageLayout = findViewById(R.id.subscriptionUsageLayout);
+
+        Intent intent = getIntent();
+        int totalCurrentMonth = intent.getIntExtra("totalCurrentMonth", 0);
+        subscriptionList = (List<Subscription>) intent.getSerializableExtra("subscriptionList");
 
         TextView monthlyUsage = findViewById(R.id.monthlyUsage);
         monthlyUsage.setText(String.format(Locale.getDefault(), "₩ %,d", totalCurrentMonth));
 
-        youtubeTimeText = findViewById(R.id.youtube_time);
-        youtubeNoteText = findViewById(R.id.youtube_note);
-        widgetTimeText = findViewById(R.id.widget_time);
-        widgetNoteText = findViewById(R.id.widget_note);
-
-        btnCancelYoutube = findViewById(R.id.btnCancelYoutube);
-        btnCancelMemo = findViewById(R.id.btnCancelMemo);
-
-
         if (!hasUsageStatsPermission()) {
             startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
         } else {
-            updateAppUsage();
+            if (subscriptionList != null && !subscriptionList.isEmpty()) {
+                displayAppUsage();
+            }
         }
 
         setupBottomNavigation();
-
-        btnCancelYoutube.setOnClickListener(v -> showCancelDialog("Youtube", "https://www.youtube.com/paid_memberships"));
-        // "메모위젯"의 해지 URL이 없으므로 null을 전달합니다.
-        btnCancelMemo.setOnClickListener(v -> showCancelDialog("메모위젯", null));
     }
+
+    private boolean hasUsageStatsPermission() {
+        UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+        long now = System.currentTimeMillis();
+        List<UsageStats> stats = usageStatsManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY, now - (1000 * 60), now);
+        return stats != null && !stats.isEmpty();
+    }
+
+    private void displayAppUsage() {
+        LayoutInflater inflater = LayoutInflater.from(this);
+        UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+        long now = System.currentTimeMillis();
+        long oneMonthAgo = now - TimeUnit.DAYS.toMillis(30);
+
+        List<UsageStats> stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_MONTHLY, oneMonthAgo, now);
+
+        for (Subscription sub : subscriptionList) {
+            String serviceName = sub.getServiceName().toLowerCase();
+            String packageName = getPackageNameForService(serviceName);
+            long usageTime = getAppUsage(stats, packageName);
+
+            View usageView = inflater.inflate(R.layout.item_app_usage, subscriptionUsageLayout, false);
+
+            ImageView appIcon = usageView.findViewById(R.id.app_icon);
+            TextView appName = usageView.findViewById(R.id.app_name);
+            TextView usageTimeText = usageView.findViewById(R.id.usage_time);
+            TextView usageNote = usageView.findViewById(R.id.usage_note);
+            ProgressBar progressBar = usageView.findViewById(R.id.progressBar);
+            MaterialButton cancelButton = usageView.findViewById(R.id.btnCancel);
+
+            appIcon.setImageResource(ServiceIconMapper.iconOfCanonical(serviceName));
+            appName.setText(sub.getServiceName());
+            usageTimeText.setText("사용시간: " + formatMillis(usageTime));
+
+            updateUsageUI(progressBar, usageNote, usageTime);
+
+            cancelButton.setOnClickListener(v -> showCancelDialog(sub.getServiceName(), getCancelUrlForService(serviceName)));
+
+            subscriptionUsageLayout.addView(usageView);
+        }
+    }
+
+    private String getPackageNameForService(String serviceName) {
+        for (Map.Entry<String, String> entry : servicePackageMap.entrySet()) {
+            if (serviceName.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        // 기본적으로는 서비스 이름을 기반으로 추측 (정확하지 않을 수 있음)
+        return "com.project." + serviceName;
+    }
+
+
+    private long getAppUsage(List<UsageStats> stats, String packageName) {
+        if (packageName == null) return 0;
+        for (UsageStats usage : stats) {
+            if (packageName.equals(usage.getPackageName())) {
+                return usage.getTotalTimeInForeground();
+            }
+        }
+        return 0;
+    }
+
+    private String formatMillis(long millis) {
+        long hours = TimeUnit.MILLISECONDS.toHours(millis);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60;
+        if (hours > 0) {
+            return String.format(Locale.getDefault(), "%d시간 %d분", hours, minutes);
+        } else {
+            return String.format(Locale.getDefault(), "%d분", minutes);
+        }
+    }
+
+    private void updateUsageUI(ProgressBar pb, TextView tv, long usageMillis) {
+        long usageHours = TimeUnit.MILLISECONDS.toHours(usageMillis);
+        int low = 2;    // 사용량 적음 기준 (2시간 미만)
+        int normal = 10; // 사용량 적정 기준 (10시간 미만)
+        int high = 20;  // 최대 기준 시간 (프로그레스바 계산용)
+
+        int progress = (int) Math.min(((float) usageMillis / TimeUnit.HOURS.toMillis(high)) * 100, 100);
+        pb.setProgress(progress);
+
+        if (usageHours < low) {
+            tv.setText("사용량 적음");
+            tv.setTextColor(Color.parseColor("#F44336")); // 빨강
+            pb.setProgressDrawable(getResources().getDrawable(R.drawable.progress_bar_gradient_red, getTheme()));
+        } else if (usageHours < normal) {
+            tv.setText("사용량 적정");
+            tv.setTextColor(Color.parseColor("#FFC107")); // 노랑
+            pb.setProgressDrawable(getResources().getDrawable(R.drawable.progress_bar_gradient_yellow, getTheme()));
+        } else {
+            tv.setText("사용량 많음");
+            tv.setTextColor(Color.parseColor("#4CAF50")); // 초록
+            // progress_bar_gradient_green.xml 파일이 없으므로 노란색으로 대체합니다.
+            // 필요하다면 해당 파일을 추가하세요.
+            pb.setProgressDrawable(getResources().getDrawable(R.drawable.progress_bar_gradient_yellow, getTheme()));
+        }
+    }
+
 
     private void showCancelDialog(String appName, String cancelUrl) {
         final Dialog dialog = new Dialog(this);
@@ -75,18 +186,13 @@ public class UsageStatsActivity extends AppCompatActivity {
             WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
             layoutParams.copyFrom(window.getAttributes());
             layoutParams.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
-            layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
             window.setAttributes(layoutParams);
         }
 
-        // ▼▼▼▼▼▼▼▼▼▼ 수정된 부분 ▼▼▼▼▼▼▼▼▼▼
-        // XML에 추가한 ID를 사용하여 TextView를 찾습니다.
         TextView appNameTextView = dialog.findViewById(R.id.dialog_app_name);
         if (appNameTextView != null) {
             appNameTextView.setText(appName);
         }
-        // ▲▲▲▲▲▲▲▲▲▲ 수정된 부분 ▲▲▲▲▲▲▲▲▲▲
-
 
         MaterialButton btnCancel = dialog.findViewById(R.id.btn_cancel);
         MaterialButton btnIgnore = dialog.findViewById(R.id.btn_ignore);
@@ -105,65 +211,17 @@ public class UsageStatsActivity extends AppCompatActivity {
     }
 
 
-    private boolean hasUsageStatsPermission() {
-        UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-        long now = System.currentTimeMillis();
-        List<UsageStats> stats = usageStatsManager.queryUsageStats(
-                UsageStatsManager.INTERVAL_DAILY, now - (1000 * 60), now);
-        return stats != null && !stats.isEmpty();
+    private String getCancelUrlForService(String serviceName) {
+        if (serviceName.contains("youtube")) {
+            return "https://www.youtube.com/paid_memberships";
+        }
+        if (serviceName.contains("netflix")) {
+            return "https://www.netflix.com/cancelplan";
+        }
+        // 다른 서비스들의 해지 URL 추가
+        return null; // URL이 없는 경우
     }
 
-    private void updateAppUsage() {
-        UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-        long now = System.currentTimeMillis();
-        // 지난 한 달간의 사용 기록을 가져옵니다.
-        long oneMonthAgo = now - TimeUnit.DAYS.toMillis(30);
-
-        List<UsageStats> stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_MONTHLY, oneMonthAgo, now);
-
-        long youtubeTime = getAppUsage(stats, "com.google.android.youtube");
-        // '메모위젯'의 실제 패키지 이름으로 변경해야 정확한 데이터가 나옵니다.
-        long widgetTime = getAppUsage(stats, "com.project.gudasi");
-
-        youtubeTimeText.setText("사용시간: " + formatMillis(youtubeTime));
-        widgetTimeText.setText("사용시간: " + formatMillis(widgetTime));
-
-        // 사용 시간에 따라 안내 문구와 색상 변경
-        if (youtubeTime < TimeUnit.HOURS.toMillis(2)) { // 2시간 미만 사용 시
-            youtubeNoteText.setText("사용량 적음");
-            youtubeNoteText.setTextColor(Color.parseColor("#F44336"));
-        } else {
-            youtubeNoteText.setText("사용량 적정");
-            youtubeNoteText.setTextColor(Color.parseColor("#FFC107"));
-        }
-
-        if (widgetTime < TimeUnit.HOURS.toMillis(1)) { // 1시간 미만 사용 시
-            widgetNoteText.setText("사용량 적음");
-            widgetNoteText.setTextColor(Color.parseColor("#F44336"));
-        } else {
-            widgetNoteText.setText("사용량 충분");
-            widgetNoteText.setTextColor(Color.parseColor("#4CAF50"));
-        }
-    }
-    private String formatMillis(long millis) {
-        long hours = TimeUnit.MILLISECONDS.toHours(millis);
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60;
-        if (hours > 0) {
-            return String.format(Locale.getDefault(), "%d시간 %d분", hours, minutes);
-        } else {
-            return String.format(Locale.getDefault(), "%d분", minutes);
-        }
-    }
-
-
-    private long getAppUsage(List<UsageStats> stats, String packageName) {
-        for (UsageStats usage : stats) {
-            if (usage.getPackageName().equals(packageName)) {
-                return usage.getTotalTimeInForeground();
-            }
-        }
-        return 0;
-    }
 
     private void setupBottomNavigation() {
         View bottomBar = findViewById(R.id.bottom_bar_include);

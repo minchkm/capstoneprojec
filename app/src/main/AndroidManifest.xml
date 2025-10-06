@@ -2,9 +2,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 알람 관련 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 사용시간 관련 -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+
+    <queries>
+        <package android:name="com.google.android.gms" />
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -17,6 +28,12 @@
         android:theme="@style/Theme.Gudasi"
         tools:targetApi="31">
 
+        <!-- 알림 받는 리시버 -->
+        <receiver
+            android:name=".AlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
         <activity android:name=".MainActivity"/>
         <activity android:name=".LoginActivity"
             android:exported="true">
@@ -28,7 +45,6 @@
 
         <activity android:name=".SplashActivity" />
         <activity android:name=".ConnectedActivity" />
-        <activity android:name=".RankingActivity"/>
         <activity android:name=".UsageStatsActivity" />
         <activity android:name=".ProfileActivity" />
         <activity android:name=".HomeActivity" />
